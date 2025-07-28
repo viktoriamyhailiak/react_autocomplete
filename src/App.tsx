@@ -1,21 +1,34 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './App.scss';
 import { peopleFromServer } from './data/people';
 import { Person } from './types/Person';
 import debounce from 'lodash.debounce';
 import classNames from 'classnames';
 
-export const App: React.FC = () => {
+interface AppProps {
+  debounceDelay?: number;
+}
+
+export const App: React.FC<AppProps> = ({ debounceDelay = 300 }) => {
   const [query, setQuery] = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
-  const [people, setPeople] = useState(peopleFromServer);
+  const [people] = useState(peopleFromServer);
   const [selected, setSelected] = useState<Person | null>(null);
   const [isInputActive, setIsInputActive] = useState(false);
   const { name, born, died } =
     peopleFromServer.find(x => x.name === selected?.name) ||
     peopleFromServer[0];
 
-  const applyQuery = useCallback(debounce(setAppliedQuery, 300), []);
+  const applyQuery = useMemo(
+    () => debounce(setAppliedQuery, debounceDelay),
+    [debounceDelay],
+  );
+
+  useEffect(() => {
+    if (selected && selected.name !== query) {
+      setSelected(null);
+    }
+  }, [query, selected]);
 
   const filteredArray = useMemo(() => {
     return people.filter(person =>
@@ -24,14 +37,18 @@ export const App: React.FC = () => {
   }, [appliedQuery, people]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
-    applyQuery(e.target.value);
+    const { value } = e.target;
+
+    setQuery(value);
+    if (value !== appliedQuery) {
+      applyQuery(value);
+    }
   };
 
   return (
     <div className="container">
       <main className="section is-flex is-flex-direction-column">
-        {selected && selected.name === query ? (
+        {selected ? (
           <h1 className="title" data-cy="title">
             {`${name} (${born} - ${died})`}
           </h1>

@@ -31,6 +31,10 @@ export const App: React.FC<AppProps> = ({ debounceDelay = 300 }) => {
   }, [query, selected]);
 
   const filteredArray = useMemo(() => {
+    if (!appliedQuery.trim()) {
+      return people;
+    }
+
     return people.filter(person =>
       person.name.toLowerCase().includes(appliedQuery.toLowerCase()),
     );
